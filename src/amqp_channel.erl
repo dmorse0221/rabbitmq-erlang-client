@@ -346,24 +346,66 @@ subscribe(Channel, BasicConsume = #'basic.consume'{}, Subscriber) ->
 %% Internal interface
 %%---------------------------------------------------------------------------
 
+%% @spec (atom(), pid(), non_neg_integer(), pid(), term()) -> 
+%%       {ok, pid()} | {error, term()}
+%% @doc Starts a channel process under supervision.
+%% 
+%% This function creates a new channel gen_server process with the specified
+%% driver, connection, channel number, consumer, and identity. The channel
+%% process handles AMQP method calls and manages the channel state.
 %% @private
 start_link(Driver, Connection, ChannelNumber, Consumer, Identity) ->
     gen_server:start_link(
       ?MODULE, [Driver, Connection, ChannelNumber, Consumer, Identity], []).
 
+%% @spec (pid(), pid()) -> ok
+%% @doc Sets the writer process for the specified channel.
+%% 
+%% This function configures the writer process that will be responsible for
+%% sending AMQP frames over the network connection for this channel. The writer
+%% is set asynchronously via gen_server cast.
+%% @private
 set_writer(Pid, Writer) ->
     gen_server:cast(Pid, {set_writer, Writer}).
 
+%% @spec (pid()) -> ok
+%% @doc Enables delivery flow control for the specified channel.
+%% 
+%% This function enables flow control for message delivery to prevent overwhelming
+%% slow consumers. When enabled, consumers will manually notify queue processes
+%% to control the rate of message delivery, particularly useful in direct
+%% connections with automatic acknowledgement mode.
+%% @private
 enable_delivery_flow_control(Pid) ->
     gen_server:cast(Pid, enable_delivery_flow_control).
 
+%% @spec ({pid(), pid(), pid()}) -> ok
+%% @doc Notifies the channel about received messages from queue processes.
+%% 
+%% This function sends a notification to the channel process about messages
+%% received from queue processes. It is part of the delivery flow control
+%% mechanism that coordinates message delivery between channels and queues.
+%% @private
 notify_received({Pid, QPid, ServerChPid}) ->
     gen_server:cast(Pid, {send_notify, {QPid, ServerChPid}}).
 
+%% @spec (pid(), atom(), term()) -> ok
+%% @doc Notifies the channel that its connection is closing.
+%% 
+%% This function informs the channel process that the connection is being
+%% closed, allowing the channel to perform cleanup operations and terminate
+%% gracefully. The channel close type and reason are provided for proper
+%% error handling and logging.
 %% @private
 connection_closing(Pid, ChannelCloseType, Reason) ->
     gen_server:cast(Pid, {connection_closing, ChannelCloseType, Reason}).
 
+%% @spec (pid()) -> ok | {error, term()}
+%% @doc Opens the channel for use.
+%% 
+%% This function synchronously opens the channel process, making it ready
+%% for AMQP operations. The function blocks until the channel is successfully
+%% opened or an error occurs.
 %% @private
 open(Pid) ->
     gen_server:call(Pid, open, amqp_util:call_timeout()).

@@ -75,12 +75,7 @@ add_verify_fun_to_opts({verify, verify_none}, _Host, Options) ->
 add_verify_fun_to_opts(_, Host, Options) ->
     % NB: this is the case where the user either did not
     % set the verify option or set it to verify_peer
-    case erlang:system_info(otp_release) of
-        "19" ->
-            F = fun ?MODULE:verify_fun/3,
-            [{verify_fun, {F, Host}} | Options];
-        _ -> Options
-    end.
+    Options.
 
 -type hostname() :: nonempty_string() | binary().
 
