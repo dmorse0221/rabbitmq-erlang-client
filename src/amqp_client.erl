@@ -20,8 +20,8 @@
 start() ->
     %% rabbit_common needs compiler and syntax_tools, see
     %%
-    %%  * https://github.com/rabbitmq/rabbitmq-erlang-client/issues/72
-    %%  * https://github.com/rabbitmq/rabbitmq-common/pull/149
+    %%  * https://github.com/rabbitmq/rabbitmq-server/tree/master/deps/amqp_client/issues/72
+    %%  * https://github.com/rabbitmq/rabbitmq-server/tree/master/deps/rabbit_common/pull/149
     application:ensure_all_started(rabbit_common),
     {ok, _} = application:ensure_all_started(amqp_client),
     ok.
